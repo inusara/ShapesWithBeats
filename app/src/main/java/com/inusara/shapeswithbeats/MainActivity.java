@@ -89,7 +89,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
         //detect circles in frame
         Imgproc.GaussianBlur( grayImg, grayImg, new Size(9, 9), 2, 2 );
-        Imgproc.HoughCircles(grayImg, frameCircles, Imgproc.CV_HOUGH_GRADIENT, 1.2, 100);
+        Imgproc.HoughCircles(grayImg, frameCircles, Imgproc.CV_HOUGH_GRADIENT, 1.2, grayImg.rows() / 4, 200, 80, 30, 400);
 
         if(frameCircles.cols() > 0) {
             for(int i = 0; i < frameCircles.cols(); i++) {
