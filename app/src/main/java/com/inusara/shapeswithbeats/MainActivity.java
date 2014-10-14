@@ -7,11 +7,11 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.core.*;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.*;
 
 import android.app.Activity;
-import android.graphics.drawable.Drawable;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
@@ -29,6 +29,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private MatOfPoint2f approxCurve;
     private List<Moments> imgMoments;
     private List<Point> massCenter;
+    MediaPlayer bg_beat, beats1, beats2, beats3, beats4;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -38,6 +39,20 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 {
                     Log.i(TAG, "OpenCV loaded successfully");
                     mOpenCvCameraView.enableView();
+
+                    AudioManager audioManager = (AudioManager) getSystemService(getApplicationContext().AUDIO_SERVICE);
+                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 20, 0);
+
+                    bg_beat = MediaPlayer.create(getApplicationContext(), R.raw.bgloop);
+
+                    bg_beat.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                        @Override
+                        public void onPrepared(MediaPlayer mp) {
+                            bg_beat.setLooping(true);
+                            bg_beat.start();
+                        }
+                    });
+
                 } break;
                 default:
                 {
@@ -67,6 +82,19 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     @Override
     public void onPause()
     {
+        bg_beat.pause();
+        if(beats1 != null) {
+            beats1.pause();
+        }
+        if(beats2 != null) {
+            beats2.pause();
+        }
+        if(beats3 != null) {
+            beats3.pause();
+        }
+        if(beats4 != null) {
+            beats4.pause();
+        }
         super.onPause();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -80,6 +108,24 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     public void onDestroy() {
+        if(beats1 != null) {
+            beats1.stop();
+            beats1.release();
+        }
+        if(beats2 != null) {
+            beats2.stop();
+            beats2.release();
+        }
+        if(beats3 != null) {
+            beats3.stop();
+            beats3.release();
+        }
+        if(beats4 != null) {
+            beats4.stop();
+            beats4.release();
+        }
+        bg_beat.stop();
+        bg_beat.release();
         super.onDestroy();
         if (mOpenCvCameraView != null)
             mOpenCvCameraView.disableView();
@@ -145,9 +191,50 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             if (approxCurve.total() >= 8 && approxCurve.isContinuous()) {
                 Core.circle(rgbaImg, new Point(massCenter.get(i).x, massCenter.get(i).y), 2, new Scalar(0, 255, 0), 2);
                 Imgproc.drawContours(rgbaImg, contours, i, new Scalar(255, 0, 0), 2);
+
+                int shapeX = (int)massCenter.get(i).x;
+                int shapeY = (int)massCenter.get(i).y;
+
+                double[] shapeRGB = rgbaImg.get(shapeX, shapeY);
+
+                if(shapeRGB != null) {
+                    double[] colorConversion = { 255 - shapeRGB[0], 255 - shapeRGB[1], 255 - shapeRGB[2] };
+
+                    if(colorConversion[0] >= 0 && colorConversion[1] >= 0 && colorConversion[2] >= 0) {
+                        shapeColor((int)colorConversion[0], (int)colorConversion[1], (int)colorConversion[2]);
+                        //Log.i("Color", "Red - " + shapeRGB[0] + " Green - " + shapeRGB[1] + " Blue - " + shapeRGB[2]);
+                    }
+                }
+
             }
+
         }
 
         return rgbaImg;
+    }
+
+    public void shapeColor(int red, int green, int blue) {
+       beats1 = MediaPlayer.create(getApplicationContext(), R.raw.beats1);
+       beats2 = MediaPlayer.create(getApplicationContext(), R.raw.beats2);
+       beats3 = MediaPlayer.create(getApplicationContext(), R.raw.beats3);
+       beats4 = MediaPlayer.create(getApplicationContext(), R.raw.beats4);
+
+        if(red > 100 && green < 100 && blue < 100) { //if red
+            if(!beats1.isPlaying()) {
+                beats1.start();
+            }
+        } else if(red < 100 && green > 100 && blue < 100) { //if green
+            if(!beats2.isPlaying()) {
+                beats2.start();
+            }
+        } else if(red < 100 && green < 100 && blue > 100) { //if blue
+            if(!beats3.isPlaying()) {
+                beats3.start();
+            }
+        } else { //color not covered
+            if(!beats4.isPlaying()) {
+                beats4.start();
+            }
+        }
     }
 }
